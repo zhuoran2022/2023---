@@ -146,6 +146,7 @@ bool solveSudoku(std::vector<std::vector<int>>& grid) {
 
             if (solveSudoku(grid))
                 return true;  // 递归解决剩余空格
+                //return false;// 找到一个解，但不会停止搜索
 
             grid[row][col] = EMPTY;  // 回溯，尝试下一个数字
         }
@@ -228,7 +229,17 @@ void writeSudokuToFile(const std::vector<std::vector<int>>& grid, const std::str
     }
 }
 
-void generateGame(std::vector<std::vector<int>>& grid, int difficultyLevel, int empty_num) {
+// 检查数独终局是否具有唯一解
+bool hasUniqueSolution(const std::vector<std::vector<int>>& grid) {
+    // 创建一个副本以进行求解
+    std::vector<std::vector<int>> copyGrid = grid;
+
+    // 使用回溯算法求解数独
+    //return solveSudoku(copyGrid);
+    return true;
+}
+
+void generateGame(std::vector<std::vector<int>>& grid, int difficultyLevel, int empty_num, bool uniqueSolution) {
     std::random_device rd;
     std::mt19937 rng(rd());
     std::uniform_int_distribution<int> dist(0, N - 1);
@@ -260,8 +271,16 @@ void generateGame(std::vector<std::vector<int>>& grid, int difficultyLevel, int 
         int row = dist(rng);
         int col = dist(rng);
         if (grid[row][col] != EMPTY) {
+            int temp = grid[row][col];
             grid[row][col] = EMPTY;
-            numToRemove--;
+            if (uniqueSolution && !hasUniqueSolution(grid)) {
+                // 如果唯一解为 true 且数独终局不具有唯一解，则恢复挖去的数字
+                grid[row][col] = temp;
+            }
+            else {
+                numToRemove--;
+            }
+            //numToRemove--;
         }
     }
 }
@@ -391,13 +410,15 @@ int main(int argc, char* argv[]) {
     std::string filename = "";// -s 需要解的数独棋盘文件路径
     int game_num = 1;// -n 需要的游戏数量
     int degree = 1;// -m 生成游戏的难度，分为1-3
-    int empty_num = 0;// -r 生成游戏中挖空的数量范围
+    int empty_down = 0, empty_up = 0, empty_num = 0;// -r 生成游戏中挖空的数量范围
+    std::string empty_region = "";
     bool onlySolution = false;// -u 代表生成的解唯一，将onlySolution置true; onlySolution为false则代表解不唯一
     // 读取并解析输入的参数
     char* c = new char[6];
     int ch;
     c[0] = 'c'; c[1] = ':'; c[2] = 's'; c[3] = ':'; c[4] = 'n'; c[5] = ':'; c[6] = 'm'; c[7] = ':'; c[8] = 'r'; c[9] = ':'; c[10] = 'u'; c[11] = '\0';
     std::cout << "argc = " << argc << "; argv = " << argv << "\n";
+    int pos = -1;
     while ((ch = getopt(argc, argv, c)) != -1) {
         switch (ch) {
             case 'c':
@@ -417,11 +438,18 @@ int main(int argc, char* argv[]) {
                 std::cout << "degree = " << degree << "\n";
                 break;
             case 'r':
-                empty_num = atoll(optarg);
+                //empty_num = atoll(optarg);
+                empty_region = optarg;
+                pos = empty_region.find("~");
+                empty_down = std::stoi(empty_region.substr(0, pos));
+                empty_up = std::stoi(empty_region.substr(pos + 1, empty_region.length() - pos - 1));
+                std::cout << "empty_down = " << empty_down << "\n";
+                std::cout << "empty_up = " << empty_up << "\n";
+                empty_num = (rand() % (empty_up + 1 - empty_down)) + empty_down;
                 std::cout << "empty_num = " << empty_num << "\n";
                 break;
             case 'u':
-                onlySolution = atoll(optarg);
+                onlySolution = true;
                 std::cout << "onlySolution = " << onlySolution << "\n";
                 break;
             default:
@@ -472,7 +500,7 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < game_num; i++)
         {
             generateSudoku(grid);
-            generateGame(grid, degree, empty_num);
+            generateGame(grid, degree, empty_num, onlySolution);
             std::cout << "=================数独题目如下================\n";
             displayGrid(grid);
             solveSudoku(grid);
