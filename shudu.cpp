@@ -6,6 +6,7 @@
 #include <random>
 #include <algorithm>
 #include <string>
+#include<assert.h>
 //#include "header1.h"
 #include <stdio.h>                  /* for EOF */
 //#include <string.h>                 /* for strchr() */
@@ -420,6 +421,7 @@ int main(int argc, char* argv[]) {
     int empty_down = 0, empty_up = 0, empty_num = 0;// -r 生成游戏中挖空的数量范围
     std::string empty_region = "";
     bool onlySolution = false;// -u 代表生成的解唯一，将onlySolution置true; onlySolution为false则代表解不唯一
+    bool hasn = false;
     // 读取并解析输入的参数
     char* c = new char[6];
     int ch;
@@ -439,25 +441,37 @@ int main(int argc, char* argv[]) {
             case 'n':
                 game_num = atoll(optarg);
                 std::cout << "game_num = " << game_num << "\n";
+                hasn = true;
                 break;
             case 'm':
-                degree = atoll(optarg);
-                std::cout << "degree = " << degree << "\n";
+                
+                if(hasn){
+                    degree = atoll(optarg);
+                    std::cout << "degree = " << degree << "\n";
+                }
+                else assert(0);
                 break;
             case 'r':
-                //empty_num = atoll(optarg);
-                empty_region = optarg;
-                pos = empty_region.find("~");
-                empty_down = std::stoi(empty_region.substr(0, pos));
-                empty_up = std::stoi(empty_region.substr(pos + 1, empty_region.length() - pos - 1));
-                std::cout << "empty_down = " << empty_down << "\n";
-                std::cout << "empty_up = " << empty_up << "\n";
-                empty_num = (rand() % (empty_up + 1 - empty_down)) + empty_down;
-                std::cout << "empty_num = " << empty_num << "\n";
+                if(hasn){
+                    empty_region = optarg;
+                    pos = empty_region.find("~");
+                    empty_down = std::stoi(empty_region.substr(0, pos));
+                    empty_up = std::stoi(empty_region.substr(pos + 1, empty_region.length() - pos - 1));
+                    std::cout << "empty_down = " << empty_down << "\n";
+                    std::cout << "empty_up = " << empty_up << "\n";
+                    empty_num = (rand() % (empty_up + 1 - empty_down)) + empty_down;
+                    std::cout << "empty_num = " << empty_num << "\n";
+                }
+                else assert(0);
+                
                 break;
             case 'u':
-                onlySolution = true;
-                std::cout << "onlySolution = " << onlySolution << "\n";
+                if(hasn){
+                    onlySolution = true;
+                    std::cout << "onlySolution = " << onlySolution << "\n";
+                }
+                else assert(0);
+                
                 break;
             default:
                 break;
