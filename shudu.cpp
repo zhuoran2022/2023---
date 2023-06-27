@@ -7,15 +7,10 @@
 #include <algorithm>
 #include <string>
 #include<assert.h>
-//#include "header1.h"
 #include <stdio.h>                  /* for EOF */
-//#include <string.h>                 /* for strchr() */
-//#include<CL/sycl.hpp>
+#include <experimental/filesystem>
 
-//using namespace sycl;
-
-//bool debug1006 = false;
-int gpu_iteration = 0;
+namespace fs = std::experimental::filesystem;
 
 /* static (global) variables that are specified as exported by getopt() */
 char* optarg = NULL;    /* pointer to the start of the option argument  */
@@ -125,34 +120,47 @@ const int N = 9;
 const int EMPTY = 0;
 
 // 函数原型
-bool solveSudoku(std::vector<std::vector<int>>& grid);
+bool solveSudoku(std::vector<std::vector<int>>& grid, int& solutionCount);
 bool findEmptyLocation(const std::vector<std::vector<int>>& grid, int& row, int& col);
 bool isValid(const std::vector<std::vector<int>>& grid, int row, int col, int num);
 void generateSudoku(std::vector<std::vector<int>>& grid);
-void writeSudokuToFile(const std::vector<std::vector<int>>& grid, const std::string& filename);
+void writeSudokuToFile(const std::vector<std::vector<int>>& grid, const std::string& filename, const std::string& directory);
 void readSudokuFromFile(std::vector<std::vector<int>>& grid, const std::string& filename);
 void printSudoku(const std::vector<std::vector<int>>& grid);
 void playSudoku();
 
 // 数独求解函数
-bool solveSudoku(std::vector<std::vector<int>>& grid) {
+bool solveSudoku(std::vector<std::vector<int>>& grid, int& solutionCount) {
     int row, col;
-    if (!findEmptyLocation(grid, row, col))
+    if (!findEmptyLocation(grid, row, col)) {
+        solutionCount++;
         return true;  // 所有空格已填满，数独已解决
+    }
 
     // 尝试填入数字
     for (int num = 1; num <= 9; num++) {
         if (isValid(grid, row, col, num)) {
             grid[row][col] = num;
 
-            if (solveSudoku(grid))
-                return true;  // 递归解决剩余空格
-                //return false;// 找到一个解，但不会停止搜索
+            if (solveSudoku(grid, solutionCount) && solutionCount > 1) {
+                return true;  // 存在多个解，停止搜索
+            }
 
             grid[row][col] = EMPTY;  // 回溯，尝试下一个数字
         }
     }
     return false;  // 无解
+}
+
+// 检查数独终局是否具有唯一解
+bool hasUniqueSolution(const std::vector<std::vector<int>>& grid) {
+    int solutionCount = 0;
+    std::vector<std::vector<int>> clonedGrid = grid;
+
+    // 尝试求解数独，并记录解的数量
+    solveSudoku(clonedGrid, solutionCount);
+
+    return solutionCount == 1;
 }
 
 // 寻找数独中的空格
@@ -212,8 +220,19 @@ void generateSudoku(std::vector<std::vector<int>>& grid) {
 }
 
 // 将数独终局写入文件
-void writeSudokuToFile(const std::vector<std::vector<int>>& grid, const std::string& filename) {
-    std::ofstream file(filename, std::ios::out | std::ios::app);
+void writeSudokuToFile(const std::vector<std::vector<int>>& grid, const std::string& filename, const std::string& directory) {
+    fs::path dirPath(directory);
+    // 检查目录是否存在，如果不存在，则尝试创建目录
+    if (!fs::exists(dirPath)) {
+        if (!fs::create_directory(dirPath)) {
+            std::cout << "无法创建目录：" << directory << std::endl;
+            return;
+        }
+    }
+
+    fs::path filePath = dirPath / filename;  // 构建完整的文件路径
+    
+    std::ofstream file(filePath.string(), std::ios::out | std::ios::app);
     if (file.is_open()) {
         for (const auto& row : grid) {
             for (int num : row) {
@@ -228,23 +247,6 @@ void writeSudokuToFile(const std::vector<std::vector<int>>& grid, const std::str
     else {
         std::cout << "无法打开文件：" << filename << std::endl;
     }
-}
-
-// 检查数独终局是否具有唯一解
-bool hasUniqueSolution(const std::vector<std::vector<int>>& grid) {
-    // 创建一个副本以进行求解
-    std::vector<std::vector<int>> copyGrid = grid;
-
-    if (solveSudoku(copyGrid)) {
-        // 检查是否有多解
-        std::vector<std::vector<int>> tempGrid = grid;
-        if (solveSudoku(tempGrid))
-            return false;  // 存在多解
-
-        return true;  // 仅存在唯一解
-    }
-
-    return false;  // 无解
 }
 
 void generateGame(std::vector<std::vector<int>>& grid, int difficultyLevel, int empty_num, bool uniqueSolution) {
@@ -295,7 +297,7 @@ void generateGame(std::vector<std::vector<int>>& grid, int difficultyLevel, int 
 
 void displayGrid(std::vector<std::vector<int>>& grid)
 {
-    std::cout << "displayGrid!!\n";
+    std::cout << "displayGrid...\n";
     for (int i = 0; i < grid.size(); i++)
     {
         for (int j = 0; j < grid[0].size(); j++)
@@ -312,7 +314,7 @@ void displayGrid(std::vector<std::vector<int>>& grid)
         std::cout << "\n";
     }
 }
-#include<iostream>
+
 // 从文件中读取数独问题
 int readSudokuFromFile(std::vector<std::vector<int>>& grid, const std::string& filename, int lastpos = 0) {
     std::ifstream file(filename);
@@ -353,45 +355,6 @@ void printSudoku(const std::vector<std::vector<int>>& grid) {
     }
 }
 
-// 玩数独游戏
-void playSudoku() {
-    std::vector<std::vector<int>> grid(N, std::vector<int>(N, EMPTY));
-    generateSudoku(grid);
-
-    std::cout << "欢迎来到数独游戏！请输入行、列和要填入的数字，用空格隔开。输入0 0 0退出游戏。\n";
-
-    while (true) {
-        std::cout << "当前数独局面：\n";
-        printSudoku(grid);
-
-        int row, col, num;
-        std::cout << "请输入行、列和数字（空格隔开）：";
-        std::cin >> row >> col >> num;
-
-        if (row == 0 && col == 0 && num == 0) {
-            std::cout << "游戏已退出。\n";
-            break;
-        }
-
-        if (row < 1 || row > 9 || col < 1 || col > 9 || num < 1 || num > 9) {
-            std::cout << "无效的输入，请重新输入。\n";
-            continue;
-        }
-
-        if (grid[row - 1][col - 1] != EMPTY) {
-            std::cout << "该位置已经填入数字，请重新选择。\n";
-            continue;
-        }
-
-        grid[row - 1][col - 1] = num;
-
-        if (solveSudoku(grid)) {
-            std::cout << "恭喜！数独已解决。\n";
-            break;
-        }
-    }
-}
-
 int how_much_shudu(std::string filename)
 {
     std::ifstream file(filename);
@@ -423,7 +386,13 @@ int main(int argc, char* argv[]) {
     bool onlySolution = false;// -u 代表生成的解唯一，将onlySolution置true; onlySolution为false则代表解不唯一
     bool hasn = false;
     // 读取并解析输入的参数
-    char* c = new char[6];
+    char* c = nullptr;
+    try {
+        c = new char[6]; // 分配内存成功，可以继续使用 c 指向的内存
+    } catch (const std::bad_alloc& e) { // 分配内存失败，处理异常
+        std::cout << "分配内存失败: " << e.what() << std::endl;
+        delete[] c;
+    }
     int ch;
     c[0] = 'c'; c[1] = ':'; c[2] = 's'; c[3] = ':'; c[4] = 'n'; c[5] = ':'; c[6] = 'm'; c[7] = ':'; c[8] = 'r'; c[9] = ':'; c[10] = 'u'; c[11] = '\0';
     std::cout << "argc = " << argc << "; argv = " << argv << "\n";
@@ -463,7 +432,6 @@ int main(int argc, char* argv[]) {
                     std::cout << "empty_num = " << empty_num << "\n";
                 }
                 else assert(0);
-                
                 break;
             case 'u':
                 if(hasn){
@@ -471,10 +439,10 @@ int main(int argc, char* argv[]) {
                     std::cout << "onlySolution = " << onlySolution << "\n";
                 }
                 else assert(0);
-                
                 break;
             default:
-                break;
+                std::cout<<"incorrect input!\n";
+                assert(0);
         }
     }
     // 1. 生成数独终局
@@ -486,7 +454,8 @@ int main(int argc, char* argv[]) {
         {
             generateSudoku(grid);
             std::string path = "shudu_final" + std::to_string(i) + txt;
-            writeSudokuToFile(grid, path);
+            std::string directory = "1_finalgame";
+            writeSudokuToFile(grid, path, directory);
         }
     }
 
@@ -502,10 +471,10 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < num_need_solve; i++)
         {
             last_pos = readSudokuFromFile(problem, filename, last_pos);
-
-            solveSudoku(problem);
-            //std::string path = "shudu_solution" + std::to_string(i) + txt;
-            writeSudokuToFile(problem, "sudoku.txt");
+            int solutionCount = 0;
+            solveSudoku(problem, solutionCount);
+            std::string directory = "2_ans";
+            writeSudokuToFile(problem, "sudoku.txt",directory);
         }
 
         std::cout << "生成的数独终局已保存至sudoku.txt\n";
@@ -524,14 +493,19 @@ int main(int argc, char* argv[]) {
             generateGame(grid, degree, empty_num, onlySolution);
             std::cout << "=================数独题目如下================\n";
             displayGrid(grid);
-            solveSudoku(grid);
+            std::string directory = "3_gengame";
+            std::string path = "shudu" + std::to_string(i) + ".txt";
+            writeSudokuToFile(grid, path,directory);
+            int solutionCount = 0;
+            solveSudoku(grid, solutionCount);
             std::cout << "=================数独求解如下================\n";
             displayGrid(grid);
+            std::string directory = "3_ansgame";
+            std::string path = "shudu" + std::to_string(i) + ".txt";
+            writeSudokuToFile(grid, path,directory);
             std::cout << "---------------------------------------------\n";
         }
     }
-
-     //playSudoku();
 
     return 0;
 }
