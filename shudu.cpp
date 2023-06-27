@@ -3,14 +3,13 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <string.h>
 #include <random>
 #include <algorithm>
 #include <string>
 #include<assert.h>
 #include <stdio.h>                  /* for EOF */
-#include <experimental/filesystem>
-
-namespace fs = std::experimental::filesystem;
+#include <io.h>
 
 /* static (global) variables that are specified as exported by getopt() */
 char* optarg = NULL;    /* pointer to the start of the option argument  */
@@ -124,10 +123,8 @@ bool solveSudoku(std::vector<std::vector<int>>& grid, int& solutionCount);
 bool findEmptyLocation(const std::vector<std::vector<int>>& grid, int& row, int& col);
 bool isValid(const std::vector<std::vector<int>>& grid, int row, int col, int num);
 void generateSudoku(std::vector<std::vector<int>>& grid);
-void writeSudokuToFile(const std::vector<std::vector<int>>& grid, const std::string& filename, const std::string& directory);
+void writeSudokuToFile(const std::vector<std::vector<int>>& grid, const std::string& filename);
 void readSudokuFromFile(std::vector<std::vector<int>>& grid, const std::string& filename);
-void printSudoku(const std::vector<std::vector<int>>& grid);
-void playSudoku();
 
 // 数独求解函数
 bool solveSudoku(std::vector<std::vector<int>>& grid, int& solutionCount) {
@@ -220,19 +217,9 @@ void generateSudoku(std::vector<std::vector<int>>& grid) {
 }
 
 // 将数独终局写入文件
-void writeSudokuToFile(const std::vector<std::vector<int>>& grid, const std::string& filename, const std::string& directory) {
-    fs::path dirPath(directory);
-    // 检查目录是否存在，如果不存在，则尝试创建目录
-    if (!fs::exists(dirPath)) {
-        if (!fs::create_directory(dirPath)) {
-            std::cout << "无法创建目录：" << directory << std::endl;
-            return;
-        }
-    }
-
-    fs::path filePath = dirPath / filename;  // 构建完整的文件路径
-    
-    std::ofstream file(filePath.string(), std::ios::out | std::ios::app);
+void writeSudokuToFile(const std::vector<std::vector<int>>& grid, const std::string& filename) {
+    std::string filePath = filename;
+    std::ofstream file(filePath, std::ios::out | std::ios::app);
     if (file.is_open()) {
         for (const auto& row : grid) {
             for (int num : row) {
@@ -343,16 +330,6 @@ int readSudokuFromFile(std::vector<std::vector<int>>& grid, const std::string& f
         std::cout << "无法打开文件：" << filename << std::endl;
     }
     return current_pos;
-}
-
-// 打印数独
-void printSudoku(const std::vector<std::vector<int>>& grid) {
-    for (const auto& row : grid) {
-        for (int num : row) {
-            std::cout << num << " ";
-        }
-        std::cout << "\n";
-    }
 }
 
 int how_much_shudu(std::string filename)
@@ -474,8 +451,7 @@ int main(int argc, char* argv[]) {
         {
             generateSudoku(grid);
             std::string path = "shudu_final" + std::to_string(i) + txt;
-            std::string directory = "1_finalgame";
-            writeSudokuToFile(grid, path, directory);
+            writeSudokuToFile(grid, path);
         }
     }
 
@@ -493,8 +469,7 @@ int main(int argc, char* argv[]) {
             last_pos = readSudokuFromFile(problem, filename, last_pos);
             int solutionCount = 0;
             solveSudoku(problem, solutionCount);
-            std::string directory = "2_ans";
-            writeSudokuToFile(problem, "sudoku.txt",directory);
+            writeSudokuToFile(problem, "sudoku.txt");
         }
 
         std::cout << "生成的数独终局已保存至sudoku.txt\n";
@@ -513,16 +488,14 @@ int main(int argc, char* argv[]) {
             generateGame(grid, degree, empty_num, onlySolution);
             std::cout << "=================数独题目如下================\n";
             displayGrid(grid);
-            std::string directory = "3_gengame";
-            std::string path = "shudu" + std::to_string(i) + ".txt";
-            writeSudokuToFile(grid, path,directory);
+            std::string path = "shuduques" + std::to_string(i) + ".txt";
+            writeSudokuToFile(grid, path);
             int solutionCount = 0;
             solveSudoku(grid, solutionCount);
             std::cout << "=================数独求解如下================\n";
             displayGrid(grid);
-            std::string directory = "3_ansgame";
-            std::string path = "shudu" + std::to_string(i) + ".txt";
-            writeSudokuToFile(grid, path,directory);
+            path = "shuduans" + std::to_string(i) + ".txt";
+            writeSudokuToFile(grid, path);
             std::cout << "---------------------------------------------\n";
         }
     }
