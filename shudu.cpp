@@ -401,6 +401,10 @@ int main(int argc, char* argv[]) {
         switch (ch) {
             case 'c':
                 final_num = atoll(optarg);
+                if(final_num<0||final_num>1000000){
+                    std::cout<<"-c number should be >=0 and <= 1000000.\n";
+                    assert(0);
+                }
                 std::cout << "final_num = " << final_num << "\n";
                 break;
             case 's':
@@ -409,16 +413,22 @@ int main(int argc, char* argv[]) {
                 break;
             case 'n':
                 game_num = atoll(optarg);
+                if(game_num<0 || game_num >10000){
+                    std::cout<<"-n number should be >=0 and <= 10000.\n";
+                    assert(0);
+                }
                 std::cout << "game_num = " << game_num << "\n";
                 hasn = true;
                 break;
             case 'm':
-                
                 if(hasn){
                     degree = atoll(optarg);
                     std::cout << "degree = " << degree << "\n";
                 }
-                else assert(0);
+                else {
+                    std::cout<<"must have arg -n!\n";
+                    assert(0);
+                }
                 break;
             case 'r':
                 if(hasn){
@@ -430,15 +440,25 @@ int main(int argc, char* argv[]) {
                     std::cout << "empty_up = " << empty_up << "\n";
                     empty_num = (rand() % (empty_up + 1 - empty_down)) + empty_down;
                     std::cout << "empty_num = " << empty_num << "\n";
+                    if(empty_down <= 20 || empty_up >= 55){
+                        std::cout<<"-r number should range from 20 to 55.\n";
+                        assert(0);
+                    }
                 }
-                else assert(0);
+                else {
+                    std::cout<<"must have arg -n!\n";
+                    assert(0);
+                }
                 break;
             case 'u':
                 if(hasn){
                     onlySolution = true;
                     std::cout << "onlySolution = " << onlySolution << "\n";
                 }
-                else assert(0);
+                else {
+                    std::cout<<"must have arg -n!\n";
+                    assert(0);
+                }
                 break;
             default:
                 std::cout<<"incorrect input!\n";
