@@ -1,9 +1,11 @@
 ./sudoku -c 10
 ./sudoku -c -1
+./sudoku -c 1000001
 ./sudoku -s game.txt
 ./sudoku -s invalid.txt
 ./sudoku -n 1000
 ./sudoku -n -1
+./sudoku -n 10001
 ./sudoku -n 100 -m 1
 ./sudoku -n 100 -m 2
 ./sudoku -n 100 -m 3
