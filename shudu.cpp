@@ -3,14 +3,13 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <string.h>
 #include <random>
 #include <algorithm>
 #include <string>
 #include<assert.h>
 #include <stdio.h>                  /* for EOF */
-#include <experimental/filesystem>
-
-namespace fs = std::experimental::filesystem;
+#include <io.h>
 
 /* static (global) variables that are specified as exported by getopt() */
 char* optarg = NULL;    /* pointer to the start of the option argument  */
@@ -120,17 +119,15 @@ const int N = 9;
 const int EMPTY = 0;
 
 // 函数原型
-bool solveSudoku(std::vector<std::vector<int>>& grid, int& solutionCount);
+bool solveSudoku(std::vector<std::vector<int>>& grid);
 bool findEmptyLocation(const std::vector<std::vector<int>>& grid, int& row, int& col);
 bool isValid(const std::vector<std::vector<int>>& grid, int row, int col, int num);
 void generateSudoku(std::vector<std::vector<int>>& grid);
-void writeSudokuToFile(const std::vector<std::vector<int>>& grid, const std::string& filename, const std::string& directory);
+void writeSudokuToFile(const std::vector<std::vector<int>>& grid, const std::string& filename);
 void readSudokuFromFile(std::vector<std::vector<int>>& grid, const std::string& filename);
-void printSudoku(const std::vector<std::vector<int>>& grid);
-void playSudoku();
 
 // 数独求解函数
-bool solveSudoku(std::vector<std::vector<int>>& grid, int& solutionCount) {
+bool solveSearch(std::vector<std::vector<int>>& grid, int& solutionCount) {
     int row, col;
     if (!findEmptyLocation(grid, row, col)) {
         solutionCount++;
@@ -142,7 +139,28 @@ bool solveSudoku(std::vector<std::vector<int>>& grid, int& solutionCount) {
         if (isValid(grid, row, col, num)) {
             grid[row][col] = num;
 
-            if (solveSudoku(grid, solutionCount) && solutionCount > 1) {
+            if (solveSearch(grid, solutionCount) && solutionCount > 1) {
+                return true;  // 存在多个解，停止搜索
+            }
+
+            grid[row][col] = EMPTY;  // 回溯，尝试下一个数字
+        }
+    }
+    return false;  // 无解
+}
+
+bool solveSudoku(std::vector<std::vector<int>>& grid) {
+    int row, col;
+    if (!findEmptyLocation(grid, row, col)) {
+        return true;  // 所有空格已填满，数独已解决
+    }
+
+    // 尝试填入数字
+    for (int num = 1; num <= 9; num++) {
+        if (isValid(grid, row, col, num)) {
+            grid[row][col] = num;
+
+            if (solveSudoku(grid)) {
                 return true;  // 存在多个解，停止搜索
             }
 
@@ -158,7 +176,7 @@ bool hasUniqueSolution(const std::vector<std::vector<int>>& grid) {
     std::vector<std::vector<int>> clonedGrid = grid;
 
     // 尝试求解数独，并记录解的数量
-    solveSudoku(clonedGrid, solutionCount);
+    solveSearch(clonedGrid, solutionCount);
 
     return solutionCount == 1;
 }
@@ -220,19 +238,9 @@ void generateSudoku(std::vector<std::vector<int>>& grid) {
 }
 
 // 将数独终局写入文件
-void writeSudokuToFile(const std::vector<std::vector<int>>& grid, const std::string& filename, const std::string& directory) {
-    fs::path dirPath(directory);
-    // 检查目录是否存在，如果不存在，则尝试创建目录
-    if (!fs::exists(dirPath)) {
-        if (!fs::create_directory(dirPath)) {
-            std::cout << "无法创建目录：" << directory << std::endl;
-            return;
-        }
-    }
-
-    fs::path filePath = dirPath / filename;  // 构建完整的文件路径
-    
-    std::ofstream file(filePath.string(), std::ios::out | std::ios::app);
+void writeSudokuToFile(const std::vector<std::vector<int>>& grid, const std::string& filename) {
+    std::string filePath = filename;
+    std::ofstream file(filePath, std::ios::out | std::ios::app);
     if (file.is_open()) {
         for (const auto& row : grid) {
             for (int num : row) {
@@ -262,18 +270,18 @@ void generateGame(std::vector<std::vector<int>>& grid, int difficultyLevel, int 
     else
     {
         switch (difficultyLevel) {
-            case 1: // 简单
-                numToRemove = 30;
-                break;
-            case 2: // 中等
-                numToRemove = 40;
-                break;
-            case 3: // 困难
-                numToRemove = 50;
-                break;
-            default:
-                std::cout << "无效的难度级别。" << std::endl;
-                return;
+        case 1: // 简单
+            numToRemove = 30;
+            break;
+        case 2: // 中等
+            numToRemove = 40;
+            break;
+        case 3: // 困难
+            numToRemove = 50;
+            break;
+        default:
+            std::cout << "无效的难度级别。" << std::endl;
+            return;
         }
     }
 
@@ -321,7 +329,7 @@ int readSudokuFromFile(std::vector<std::vector<int>>& grid, const std::string& f
     int current_pos = 0;
     if (file.is_open()) {
         file.seekg(lastpos, std::ios::beg);
-        displayGrid(grid);
+        //displayGrid(grid);
         char c;
         for (auto& row : grid) {
             for (int& num : row) {
@@ -345,16 +353,6 @@ int readSudokuFromFile(std::vector<std::vector<int>>& grid, const std::string& f
     return current_pos;
 }
 
-// 打印数独
-void printSudoku(const std::vector<std::vector<int>>& grid) {
-    for (const auto& row : grid) {
-        for (int num : row) {
-            std::cout << num << " ";
-        }
-        std::cout << "\n";
-    }
-}
-
 int how_much_shudu(std::string filename)
 {
     std::ifstream file(filename);
@@ -376,10 +374,11 @@ int how_much_shudu(std::string filename)
 }
 
 int main(int argc, char* argv[]) {
+    std::cout << "欢迎您使用数独生成&求解小程序！\n";
     // 初始化要读入的参数
     int final_num = 0;// -c 需要的数独终盘数量
     std::string filename = "";// -s 需要解的数独棋盘文件路径
-    int game_num = 1;// -n 需要的游戏数量
+    int game_num = 0;// -n 需要的游戏数量
     int degree = 1;// -m 生成游戏的难度，分为1-3
     int empty_down = 0, empty_up = 0, empty_num = 0;// -r 生成游戏中挖空的数量范围
     std::string empty_region = "";
@@ -388,100 +387,126 @@ int main(int argc, char* argv[]) {
     // 读取并解析输入的参数
     char* c = nullptr;
     try {
-        c = new char[6]; // 分配内存成功，可以继续使用 c 指向的内存
-    } catch (const std::bad_alloc& e) { // 分配内存失败，处理异常
+        c = new char[15]; // 分配内存成功，可以继续使用 c 指向的内存
+    }
+    catch (const std::bad_alloc& e) { // 分配内存失败，处理异常
         std::cout << "分配内存失败: " << e.what() << std::endl;
         delete[] c;
     }
     int ch;
-    c[0] = 'c'; c[1] = ':'; c[2] = 's'; c[3] = ':'; c[4] = 'n'; c[5] = ':'; c[6] = 'm'; c[7] = ':'; c[8] = 'r'; c[9] = ':'; c[10] = 'u'; c[11] = '\0';
-    std::cout << "argc = " << argc << "; argv = " << argv << "\n";
+    c[0] = 'c'; c[1] = ':';
+    c[2] = 's'; c[3] = ':';
+    c[4] = 'n'; c[5] = ':';
+    c[6] = 'm'; c[7] = ':';
+    c[8] = 'h'; c[9] = ':';
+    c[10] = 'r'; c[11] = ':';
+    c[12] = 'u'; c[13] = '\0';
+    //std::cout << "argc = " << argc << "; argv = " << argv << "\n";
     int pos = -1;
     while ((ch = getopt(argc, argv, c)) != -1) {
+        //std::cout << "ch = " << ch << "\n";
         switch (ch) {
-            case 'c':
-                final_num = atoll(optarg);
-                if(final_num<0||final_num>1000000){
-                    std::cout<<"-c number should be >=0 and <= 1000000.\n";
-                    assert(0);
-                }
-                std::cout << "final_num = " << final_num << "\n";
-                break;
-            case 's':
-                filename = optarg;
-                std::cout << "filename = " << filename << "\n";
-                break;
-            case 'n':
-                game_num = atoll(optarg);
-                if(game_num<0 || game_num >10000){
-                    std::cout<<"-n number should be >=0 and <= 10000.\n";
-                    assert(0);
-                }
-                std::cout << "game_num = " << game_num << "\n";
-                hasn = true;
-                break;
-            case 'm':
-                if(hasn){
-                    degree = atoll(optarg);
-                    std::cout << "degree = " << degree << "\n";
-                }
-                else {
-                    std::cout<<"must have arg -n!\n";
-                    assert(0);
-                }
-                break;
-            case 'r':
-                if(hasn){
-                    empty_region = optarg;
-                    pos = empty_region.find("~");
-                    empty_down = std::stoi(empty_region.substr(0, pos));
-                    empty_up = std::stoi(empty_region.substr(pos + 1, empty_region.length() - pos - 1));
-                    std::cout << "empty_down = " << empty_down << "\n";
-                    std::cout << "empty_up = " << empty_up << "\n";
-                    empty_num = (rand() % (empty_up + 1 - empty_down)) + empty_down;
-                    std::cout << "empty_num = " << empty_num << "\n";
-                    if(empty_down <= 20 || empty_up >= 55){
-                        std::cout<<"-r number should range from 20 to 55.\n";
-                        assert(0);
-                    }
-                }
-                else {
-                    std::cout<<"must have arg -n!\n";
-                    assert(0);
-                }
-                break;
-            case 'u':
-                if(hasn){
-                    onlySolution = true;
-                    std::cout << "onlySolution = " << onlySolution << "\n";
-                }
-                else {
-                    std::cout<<"must have arg -n!\n";
-                    assert(0);
-                }
-                break;
-            default:
-                std::cout<<"incorrect input!\n";
+        case 'c':
+            final_num = atoll(optarg);
+            if (final_num < 0 || final_num>1000000) {
+                std::cout << "-c number should be >=0 and <= 1000000.\n";
                 assert(0);
+            }
+            std::cout << "final_num = " << final_num << "\n";
+            break;
+        case 's':
+            filename = optarg;
+            std::cout << "filename = " << filename << "\n";
+            break;
+        case 'n':
+            game_num = atoll(optarg);
+            if (game_num < 0 || game_num >10000) {
+                std::cout << "-n number should be >=0 and <= 10000.\n";
+                assert(0);
+            }
+            std::cout << "game_num = " << game_num << "\n";
+            hasn = true;
+            break;
+        case 'm':
+            if (hasn) {
+                degree = atoll(optarg);
+                std::cout << "degree = " << degree << "\n";
+            }
+            else {
+                std::cout << "must have arg -n!\n";
+                assert(0);
+            }
+            break;
+        case 'r':
+            if (hasn) {
+                empty_region = optarg;
+                pos = empty_region.find("~");
+                empty_down = std::stoi(empty_region.substr(0, pos));
+                empty_up = std::stoi(empty_region.substr(pos + 1, empty_region.length() - pos - 1));
+                std::cout << "empty_down = " << empty_down << "\n";
+                std::cout << "empty_up = " << empty_up << "\n";
+                empty_num = (rand() % (empty_up + 1 - empty_down)) + empty_down;
+                std::cout << "empty_num = " << empty_num << "\n";
+                if (empty_down <= 0 || empty_up >= 81) {
+                    std::cout << "-r number should range from 1 to 80.\n";
+                    assert(0);
+                }
+            }
+            else {
+                std::cout << "must have arg -n!\n";
+                assert(0);
+            }
+            break;
+        case 'u':
+            if (hasn) {
+                onlySolution = true;
+                std::cout << "onlySolution = " << onlySolution << "\n";
+            }
+            else {
+                std::cout << "must have arg -n!\n";
+                assert(0);
+            }
+            break;
+        case 63:
+            std::cout << "-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n";
+            std::cout << "-h            表示给出参数提示\n";
+            std::cout << "-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n";
+            std::cout << "-c N          N表示需要的数独终盘数量 1-1000000 示例： sudoku . exe -c20［表示生成20个数独终盘］\n";
+            std::cout << "-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n";
+            std::cout << "-s STRING     STRING表示 需要解的数独棋盘文件路径 绝对或相对路径 示例： sudoku . exe - s game . txt ［表示从 game . txt 读取若干个数独游戏，并给出其解答，生成到 sudoku . txt 中］\n";
+            std::cout << "-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n";
+            std::cout << "-n N          N表示需要的游戏数量 1-10000 示例： sudoku . exe - n 1000［表示生成1000个数独游戏］\n";
+            std::cout << "-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n";
+            std::cout << "-m N          N表示生成游戏的难度 1-3 示例： sudoku . exe - n 1000- m 1［表示生成1000个简单数独游戏，只有 m 和 n 一起使用才认为参数无误，否则将会报错］\n";
+            std::cout << "-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n";
+            std::cout << "-r N1~N2      N1~N2表示生成游戏中挖空的数量范围 20-55 示例： sudoku . exe - n 20-r20~55［表示生成20个挖空数在20到55之间的数独游戏，只有 r 和 n 一起使用才认为参数无误，否则将会报错］\n";
+            std::cout << "-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n";
+            std::cout << "-u            表示生成游戏的解唯一 示例： sudoku . exe - n 20- u ［表示生成20个解唯一的数独游戏，只有 u 和 n 一起使用才认为参数无误，否则将会报错］\n";
+            std::cout << "-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n";
+            break;
+        default:
+            std::cout << "incorrect input!\n";
+            assert(0);
         }
     }
     // 1. 生成数独终局
     if (final_num > 0)
     {
+        std::cout << "====================下面生成数独终局===================\n";
         std::string txt = ".txt";
         std::vector<std::vector<int>> grid(N, std::vector<int>(N, EMPTY));
         for (int i = 0; i < final_num; i++)
         {
             generateSudoku(grid);
             std::string path = "shudu_final" + std::to_string(i) + txt;
-            std::string directory = "1_finalgame";
-            writeSudokuToFile(grid, path, directory);
+            writeSudokuToFile(grid, path);
         }
     }
 
     // 2. 读取文件内的数独问题，求解并将结果输出至文件
     if (filename != "")
     {
+        std::cout << "==============下面读取文件中数独问题并解答=============\n";
         std::vector<std::vector<int>> problem(N, std::vector<int>(N, EMPTY));
         int last_pos = 0;
         int num_need_solve = how_much_shudu(filename);
@@ -492,40 +517,37 @@ int main(int argc, char* argv[]) {
         {
             last_pos = readSudokuFromFile(problem, filename, last_pos);
             int solutionCount = 0;
-            solveSudoku(problem, solutionCount);
-            std::string directory = "2_ans";
-            writeSudokuToFile(problem, "sudoku.txt",directory);
+            solveSudoku(problem);
+            writeSudokuToFile(problem, "sudoku.txt");
         }
 
-        std::cout << "生成的数独终局已保存至sudoku.txt\n";
-        std::cout << "数独问题的解已保存至solution.txt\n";
+        //std::cout << "生成的数独终局已保存至sudoku.txt\n";
+        std::cout << "数独问题的解已保存至sudoku.txt\n";
     }
 
     // 3.生成数独游戏并让计算机解答
     if (game_num > 0)
     {
-        std::cout << "生成的数独游戏及求解如下：\n";
+        std::cout << "=================下面生成数独游戏并解答================\n";
         std::cout << "game_num = " << game_num << "\n";
         std::vector<std::vector<int>> grid(N, std::vector<int>(N, EMPTY));
         for (int i = 0; i < game_num; i++)
         {
             generateSudoku(grid);
             generateGame(grid, degree, empty_num, onlySolution);
-            std::cout << "=================数独题目如下================\n";
+            std::cout << "----------------数独题目如下----------------\n";
             displayGrid(grid);
-            std::string directory = "3_gengame";
-            std::string path = "shudu" + std::to_string(i) + ".txt";
-            writeSudokuToFile(grid, path,directory);
+            std::string path = "shuduques" + std::to_string(i) + ".txt";
+            writeSudokuToFile(grid, path);
             int solutionCount = 0;
-            solveSudoku(grid, solutionCount);
-            std::cout << "=================数独求解如下================\n";
+            solveSudoku(grid);
+            std::cout << "----------------数独求解如下----------------\n";
             displayGrid(grid);
-            std::string directory = "3_ansgame";
-            std::string path = "shudu" + std::to_string(i) + ".txt";
-            writeSudokuToFile(grid, path,directory);
+            path = "shuduans" + std::to_string(i) + ".txt";
+            writeSudokuToFile(grid, path);
             std::cout << "---------------------------------------------\n";
         }
     }
-
+    std::cout << "感谢您的使用！\n";
     return 0;
 }
