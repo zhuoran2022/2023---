@@ -517,12 +517,8 @@ int main(int argc, char* argv[]) {
         {
             last_pos = readSudokuFromFile(problem, filename, last_pos);
             int solutionCount = 0;
-            <<<<<< < HEAD
-                solveSudoku(problem);
-            ====== =
-                solveSudoku(problem, solutionCount);
-            >>>>>> > e01ee664139b1df4435d8883f926d56ea70ddc2b
-                writeSudokuToFile(problem, "sudoku.txt");
+            solveSudoku(problem);
+            writeSudokuToFile(problem, "sudoku.txt");
         }
 
         //std::cout << "生成的数独终局已保存至sudoku.txt\n";

@@ -1,21 +1,22 @@
-./sudoku -c 10
-./sudoku -c -1
-./sudoku -c 1000001
-./sudoku -s game.txt
-./sudoku -s invalid.txt
-./sudoku -n 1000
-./sudoku -n -1
-./sudoku -n 10001
-./sudoku -n 100 -m 1
-./sudoku -n 100 -m 2
-./sudoku -n 100 -m 3
-./sudoku -n 100 -m 4
-./sudoku -m 1
-./sudoku -n 20 -r 20~55
-./sudoku -n 20 -r 30~60
-./sudoku -n 20 -r 10~50
-./sudoku -r 20~55
-./sudoku -n 20 -u
-./sudoku -u
+./shudu -c 10
+./shudu -c -1
+./shudu -c 1000001
+./shudu -s game.txt
+./shudu -s invalid.txt
+./shudu -n 1000
+./shudu -n -1
+./shudu -n 10001
+./shudu -n 100 -m 1
+./shudu -n 100 -m 2
+./shudu -n 100 -m 3
+./shudu -n 100 -m 4
+./shudu -m 1
+./shudu -n 20 -r 20~55
+./shudu -n 20 -r 30~60
+./shudu -n 20 -r 10~50
+./shudu -r 20~55
+./shudu -n 20 -u
+./shudu -u
 ./shudu -c 3 -s -g.txt -n 2 -m 1 -u
-./sudoku -a
+./shudu -h
+./shudu -a
